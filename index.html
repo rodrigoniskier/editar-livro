@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Editor Gráfico de Capítulos</title>
+    <!-- Importação do Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Importação das bibliotecas para geração de PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Importação de fontes do Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilos personalizados */
+        body {
+            font-family: 'Lato', sans-serif;
+        }
+        /* Estilo para a primeira letra capitular (Drop Cap) */
+        .drop-cap::first-letter {
+            font-size: 4em;
+            font-weight: bold;
+            float: left;
+            line-height: 0.8;
+            margin-right: 0.1em;
+            font-family: 'Merriweather', serif;
+        }
+        /* Estilo para o elemento selecionado para edição */
+        .selected-for-editing {
+            outline: 2px dashed #3b82f6;
+            outline-offset: 2px;
+        }
+        /* Esconde os controles de redimensionamento da textarea */
+        textarea {
+            resize: none;
+        }
+        /* Garante que o conteúdo do PDF seja renderizado corretamente */
+        #pdf-content h1, #pdf-content h2, #pdf-content h3, #pdf-content p, #pdf-content div {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="flex flex-col lg:flex-row min-h-screen">
+        <!-- Barra de Ferramentas de Edição -->
+        <aside class="w-full lg:w-72 bg-white p-4 shadow-lg lg:sticky top-0 h-auto lg:h-screen">
+            <h2 class="text-xl font-bold mb-4 border-b pb-2">Ferramentas de Edição</h2>
+            <div id="editing-toolbar" class="space-y-4">
+                <div>
+                    <label for="font-family-select" class="block text-sm font-medium text-gray-700">Fonte</label>
+                    <select id="font-family-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option style="font-family: 'Merriweather', serif;" value="'Merriweather', serif">Merriweather</option>
+                        <option style="font-family: 'Cormorant Garamond', serif;" value="'Cormorant Garamond', serif">Cormorant Garamond</option>
+                        <option style="font-family: 'EB Garamond', serif;" value="'EB Garamond', serif">EB Garamond</option>
+                        <option style="font-family: 'Lato', sans-serif;" value="'Lato', sans-serif">Lato</option>
+                        <option style="font-family: 'Roboto', sans-serif;" value="'Roboto', sans-serif">Roboto</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="font-size-input" class="block text-sm font-medium text-gray-700">Tamanho da Fonte (px)</label>
+                    <input type="number" id="font-size-input" value="16" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="font-color-input" class="block text-sm font-medium text-gray-700">Cor da Fonte</label>
+                    <input type="color" id="font-color-input" value="#333333" class="mt-1 block w-full h-10 border-gray-300 rounded-md">
+                </div>
+                 <div>
+                    <label for="bg-color-input" class="block text-sm font-medium text-gray-700">Cor de Fundo (Cards)</label>
+                    <input type="color" id="bg-color-input" value="#ffffff" class="mt-1 block w-full h-10 border-gray-300 rounded-md">
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="bold-btn" class="p-2 bg-gray-200 rounded-md font-bold">B</button>
+                    <button id="italic-btn" class="p-2 bg-gray-200 rounded-md italic">I</button>
+                    <button id="underline-btn" class="p-2 bg-gray-200 rounded-md underline">U</button>
+                </div>
+                <p class="text-xs text-gray-500 pt-4">Clique em qualquer texto no editor para selecioná-lo e aplicar as formatações.</p>
+            </div>
+        </aside>
+
+        <!-- Área Principal do Editor -->
+        <main class="flex-1 p-8 overflow-y-auto">
+            <div id="editor-container" class="max-w-4xl mx-auto bg-white p-12 shadow-2xl rounded-lg">
+                <!-- Informações do Cabeçalho do Capítulo -->
+                <div class="space-y-4 mb-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <input type="number" id="page-number" placeholder="Nº da Primeira Página" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="chapter-number" placeholder="Nº do Capítulo (ex: 1, I, etc.)" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <input type="text" id="chapter-title" placeholder="Título do Capítulo" style="font-family: 'Merriweather', serif; font-size: 28px; font-weight: bold;" class="editable w-full p-2 border-none text-3xl font-bold text-center focus:outline-none bg-transparent">
+                    <input type="text" id="chapter-subtitle" placeholder="Subtítulo do Capítulo (Opcional)" style="font-family: 'Lato', sans-serif; font-size: 18px; font-style: italic;" class="editable w-full p-2 border-none text-lg italic text-center text-gray-600 focus:outline-none bg-transparent">
+                </div>
+
+                <!-- Mensagem de Abertura -->
+                <div id="opening-message-card" class="mb-8 p-6 bg-gray-50 border-l-4 border-gray-300 italic relative group">
+                    <textarea placeholder="Mensagem de abertura recuada (Opcional)" style="font-family: 'EB Garamond', serif; font-size: 17px;" class="editable w-full h-24 p-2 bg-transparent border-none focus:outline-none"></textarea>
+                    <button onclick="document.getElementById('opening-message-card').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                </div>
+                
+                <!-- Texto Introdutório -->
+                <div class="mb-8">
+                     <textarea placeholder="Digite o texto de introdução aqui. A primeira letra será automaticamente destacada." style="font-family: 'EB Garamond', serif; font-size: 18px;" class="editable w-full h-40 p-2 border-none focus:outline-none leading-relaxed drop-cap"></textarea>
+                </div>
+
+                <!-- Contêiner para Seções -->
+                <div id="sections-container" class="space-y-8"></div>
+                
+                <!-- Contêiner para Imagens -->
+                <div id="images-container" class="space-y-8 mt-8"></div>
+
+                <!-- Botões de Ação -->
+                <div class="flex flex-wrap gap-4 mt-12 border-t pt-8">
+                    <button id="add-section-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Adicionar Seção</button>
+                    <button onclick="document.getElementById('image-upload').click()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors">Anexar Imagem</button>
+                    <input type="file" id="image-upload" class="hidden" accept="image/*">
+                </div>
+            </div>
+
+            <!-- Botão Final para Gerar PDF -->
+            <div class="max-w-4xl mx-auto mt-8 text-center">
+                 <button id="generate-pdf-btn" class="bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-800 transition-colors text-lg shadow-lg">
+                    Gerar Capítulo em PDF
+                </button>
+                <div id="loader" class="hidden mt-4">
+                    <p>Gerando PDF, por favor aguarde...</p>
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-700 mx-auto mt-2"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const editorContainer = document.getElementById('editor-container');
+            const sectionsContainer = document.getElementById('sections-container');
+            const imagesContainer = document.getElementById('images-container');
+            const addSectionBtn = document.getElementById('add-section-btn');
+            const imageUpload = document.getElementById('image-upload');
+            const generatePdfBtn = document.getElementById('generate-pdf-btn');
+            const loader = document.getElementById('loader');
+
+            // --- Lógica de Edição de Texto ---
+            let selectedElement = null;
+
+            const fontFamilySelect = document.getElementById('font-family-select');
+            const fontSizeInput = document.getElementById('font-size-input');
+            const fontColorInput = document.getElementById('font-color-input');
+            const bgColorInput = document.getElementById('bg-color-input');
+            const boldBtn = document.getElementById('bold-btn');
+            const italicBtn = document.getElementById('italic-btn');
+            const underlineBtn = document.getElementById('underline-btn');
+
+            editorContainer.addEventListener('click', (e) => {
+                // Permite edição em inputs, textareas e elementos com a classe 'editable-static'
+                if (e.target.matches('input, textarea, .editable-static')) {
+                    if (selectedElement) {
+                        selectedElement.classList.remove('selected-for-editing');
+                    }
+                    selectedElement = e.target;
+                    selectedElement.classList.add('selected-for-editing');
+                    updateToolbar(selectedElement);
+                }
+            });
+
+            function updateToolbar(element) {
+                const style = window.getComputedStyle(element);
+                fontFamilySelect.value = style.fontFamily.split(',')[0].replace(/"/g, '');
+                fontSizeInput.value = parseInt(style.fontSize, 10);
+                fontColorInput.value = rgbToHex(style.color);
+                
+                // Para cor de fundo, busca o card pai se o elemento for um texto dentro dele
+                const parentCard = element.closest('.section-card, #opening-message-card');
+                if (parentCard) {
+                    bgColorInput.value = rgbToHex(window.getComputedStyle(parentCard).backgroundColor);
+                }
+
+                boldBtn.classList.toggle('bg-blue-500', style.fontWeight === '700' || style.fontWeight === 'bold');
+                italicBtn.classList.toggle('bg-blue-500', style.fontStyle === 'italic');
+                underlineBtn.classList.toggle('bg-blue-500', style.textDecoration.includes('underline'));
+            }
+
+            function applyStyle(property, value) {
+                if (selectedElement) {
+                    if (property === 'backgroundColor') {
+                         const parentCard = selectedElement.closest('.section-card, #opening-message-card');
+                         if(parentCard) parentCard.style.backgroundColor = value;
+                    } else {
+                        selectedElement.style[property] = value;
+                    }
+                }
+            }
+            
+            function toggleStyle(property, value, offValue = 'normal') {
+                if(selectedElement) {
+                    selectedElement.style[property] = selectedElement.style[property] === value ? offValue : value;
+                    updateToolbar(selectedElement);
+                }
+            }
+            
+            fontFamilySelect.addEventListener('change', (e) => applyStyle('fontFamily', e.target.value));
+            fontSizeInput.addEventListener('input', (e) => applyStyle('fontSize', `${e.target.value}px`));
+            fontColorInput.addEventListener('input', (e) => applyStyle('color', e.target.value));
+            bgColorInput.addEventListener('input', (e) => applyStyle('backgroundColor', e.target.value));
+            boldBtn.addEventListener('click', () => toggleStyle('fontWeight', 'bold', 'normal'));
+            italicBtn.addEventListener('click', () => toggleStyle('fontStyle', 'italic', 'normal'));
+            underlineBtn.addEventListener('click', () => toggleStyle('textDecoration', 'underline', 'none'));
+
+            // --- Lógica para Adicionar Seções ---
+            addSectionBtn.addEventListener('click', () => {
+                const sectionId = `section-${Date.now()}`;
+                const sectionCard = document.createElement('div');
+                sectionCard.className = 'p-6 bg-white border rounded-lg shadow-md relative group section-card';
+                sectionCard.innerHTML = `
+                    <input type="text" placeholder="Título da Seção" style="font-family: 'Merriweather', serif; font-size: 22px; font-weight: bold;" class="editable w-full p-2 mb-2 border-none text-xl font-bold focus:outline-none bg-transparent">
+                    <textarea placeholder="Breve texto introdutório da seção (opcional)" style="font-family: 'Lato', sans-serif; font-size: 16px; font-style: italic;" class="editable w-full h-20 p-2 mb-4 border-none italic text-gray-600 focus:outline-none bg-transparent"></textarea>
+                    <textarea placeholder="Conteúdo da seção..." style="font-family: 'EB Garamond', serif; font-size: 18px;" class="editable w-full h-48 p-2 border-none focus:outline-none leading-relaxed"></textarea>
+                    <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                `;
+                sectionsContainer.appendChild(sectionCard);
+            });
+            
+            // --- Lógica para Anexar Imagens ---
+            imageUpload.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const imageId = `image-${Date.now()}`;
+                        const imageWrapper = document.createElement('div');
+                        imageWrapper.className = 'relative group';
+                        imageWrapper.innerHTML = `
+                            <img src="${e.target.result}" class="max-w-full h-auto mx-auto rounded-md shadow-lg" alt="Imagem do usuário">
+                            <div class="mt-2">
+                                <input type="text" placeholder="Legenda da imagem (opcional)" style="font-family: 'Lato', sans-serif; font-size: 14px;" class="editable w-full p-2 border-none text-sm text-center text-gray-600 focus:outline-none bg-transparent">
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-white rounded-full p-1 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                        `;
+                        imagesContainer.appendChild(imageWrapper);
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+
+
+            // --- Lógica para Gerar PDF ---
+            generatePdfBtn.addEventListener('click', async () => {
+                loader.classList.remove('hidden');
+                generatePdfBtn.disabled = true;
+
+                // 1. Criar um contêiner temporário para o conteúdo do PDF
+                const pdfContent = document.createElement('div');
+                pdfContent.id = "pdf-content";
+                pdfContent.style.width = '210mm'; // Tamanho A4
+                pdfContent.style.padding = '20mm';
+                pdfContent.style.position = 'absolute';
+                pdfContent.style.left = '-9999px'; // Esconder fora da tela
+                pdfContent.style.fontFamily = "'EB Garamond', serif";
+                pdfContent.style.fontSize = "12pt";
+                pdfContent.style.color = "#000";
+                document.body.appendChild(pdfContent);
+
+                // 2. Clonar o conteúdo do editor para o contêiner de PDF
+                const pageNumber = document.getElementById('page-number').value;
+                const chapterNumber = document.getElementById('chapter-number').value;
+
+                // Cabeçalho
+                let headerHTML = `<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 40px;">
+                    <span style="font-size: 10pt;">${document.getElementById('chapter-title').value}</span>
+                    <span style="font-size: 10pt;">${pageNumber}</span>
+                </div>`;
+                
+                // Conteúdo principal
+                let mainContentHTML = '';
+
+                // Transferir conteúdo e estilos
+                editorContainer.querySelectorAll('input[type="text"], textarea').forEach(el => {
+                    const parent = el.parentElement;
+                    let newEl;
+                    const value = el.value.replace(/\n/g, '<br>');
+                    
+                    if (el.id === 'chapter-title') newEl = document.createElement('h1');
+                    else if (el.id === 'chapter-subtitle') newEl = document.createElement('h2');
+                    else if (parent.classList.contains('section-card') && el.matches('input')) newEl = document.createElement('h3');
+                    else newEl = document.createElement('p');
+
+                    newEl.innerHTML = value;
+                    
+                    // Copia os estilos aplicados dinamicamente
+                    newEl.style.cssText = el.style.cssText;
+                    
+                    // Adiciona classes relevantes para estilo
+                    if (el.classList.contains('drop-cap')) newEl.classList.add('drop-cap');
+                    
+                    // Insere no container de PDF
+                    if (parent.id === 'editor-container' || parent.parentElement.id === 'editor-container') {
+                        mainContentHTML += newEl.outerHTML;
+                    } else if (parent.closest('.section-card')) {
+                         // Lógica para agrupar seções (a ser implementada se necessário)
+                         mainContentHTML += newEl.outerHTML;
+                    } else {
+                         mainContentHTML += newEl.outerHTML;
+                    }
+                });
+                
+                // Clonar imagens e legendas
+                 editorContainer.querySelectorAll('#images-container .group').forEach(imgGroup => {
+                    const img = imgGroup.querySelector('img');
+                    const caption = imgGroup.querySelector('input');
+                    mainContentHTML += `<figure style="text-align: center; margin: 20px 0;">
+                        <img src="${img.src}" style="max-width: 80%; height: auto; margin: 0 auto; display: block;">
+                        ${caption.value ? `<figcaption style="font-size: 10pt; font-style: italic; margin-top: 8px;">${caption.value}</figcaption>` : ''}
+                    </figure>`;
+                });
+                
+                pdfContent.innerHTML = mainContentHTML;
+
+
+                // 3. Usar html2canvas e jsPDF
+                try {
+                    const { jsPDF } = window.jspdf;
+                    const canvas = await html2canvas(pdfContent, {
+                        scale: 2, // Aumenta a resolução para melhor qualidade
+                        useCORS: true,
+                    });
+                    
+                    const imgData = canvas.toDataURL('image/png');
+                    const pdf = new jsPDF({
+                        orientation: 'portrait',
+                        unit: 'pt',
+                        format: 'a4'
+                    });
+
+                    const pdfWidth = pdf.internal.pageSize.getWidth();
+                    const pdfHeight = pdf.internal.pageSize.getHeight();
+                    const canvasWidth = canvas.width;
+                    const canvasHeight = canvas.height;
+                    const ratio = canvasWidth / pdfWidth;
+                    const imgHeight = canvasHeight / ratio;
+
+                    let heightLeft = imgHeight;
+                    let position = 0;
+                    let currentPage = parseInt(pageNumber, 10) || 1;
+
+                    // Adicionar a primeira página
+                    addHeaderAndFooter(pdf, currentPage);
+                    pdf.addImage(imgData, 'PNG', 0, 40, pdfWidth, imgHeight);
+                    heightLeft -= (pdfHeight - 60); // Subtrai o espaço útil
+
+                    // Adicionar novas páginas se o conteúdo for maior
+                    while (heightLeft > 0) {
+                        position = -heightLeft + imgHeight;
+                        currentPage++;
+                        pdf.addPage();
+                        addHeaderAndFooter(pdf, currentPage);
+                        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+                        heightLeft -= (pdfHeight - 60);
+                    }
+
+                    // Abrir o PDF em uma nova aba
+                    pdf.output('dataurlnewwindow');
+
+                } catch (error) {
+                    console.error("Erro ao gerar PDF:", error);
+                    alert("Ocorreu um erro ao gerar o PDF. Verifique o console para mais detalhes.");
+                } finally {
+                    // Limpeza
+                    document.body.removeChild(pdfContent);
+                    loader.classList.add('hidden');
+                    generatePdfBtn.disabled = false;
+                }
+            });
+
+            function addHeaderAndFooter(pdf, pageNum) {
+                const title = document.getElementById('chapter-title').value || "Título do Capítulo";
+                const chapterNum = document.getElementById('chapter-number').value || "Capítulo";
+                 
+                pdf.setFontSize(9);
+                pdf.setTextColor(150);
+                
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
+                if (pageNum % 2 === 0) { // Página par
+                    pdf.text(title, 40, 25);
+                    pdf.text(String(pageNum), pageWidth - 40, pageHeight - 25);
+                } else { // Página ímpar
+                    pdf.text(title, pageWidth - 40 - pdf.getStringUnitWidth(title) * 9, 25);
+                    pdf.text(String(pageNum), 40, pageHeight - 25);
+                }
+            }
+            
+            // Função utilitária para converter RGB para Hex
+            function rgbToHex(rgb) {
+                if (!rgb || !rgb.startsWith('rgb')) return '#000000';
+                let sep = rgb.indexOf(",") > -1 ? "," : " ";
+                rgb = rgb.substr(4).split(")")[0].split(sep);
+
+                let r = (+rgb[0]).toString(16),
+                    g = (+rgb[1]).toString(16),
+                    b = (+rgb[2]).toString(16);
+
+                if (r.length == 1) r = "0" + r;
+                if (g.length == 1) g = "0" + g;
+                if (b.length == 1) b = "0" + b;
+
+                return "#" + r + g + b;
+            }
+
+        });
+    </script>
+
+</body>
+</html>

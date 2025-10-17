@@ -6,16 +6,17 @@
     <title>Editor Gráfico de Capítulos</title>
     <!-- Importação do Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Importação de Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <!-- Importação de fontes do Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,700;1,400&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Roboto:wght@400;700&family=Noto+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        /* Estilos personalizados */
+        /* Estilos personalizados inspirados no LaTeX */
         body {
-            font-family: 'Lato', sans-serif;
+            font-family: 'Noto Sans', sans-serif;
         }
-        /* Estilo para a primeira letra capitular (Drop Cap) */
         .drop-cap::first-letter {
             font-size: 4em;
             font-weight: bold;
@@ -24,27 +25,106 @@
             margin-right: 0.1em;
             font-family: 'Merriweather', serif;
         }
-        /* Estilo para o elemento selecionado para edição */
-        .selected-for-editing {
-            outline: 2px dashed #3b82f6;
-            outline-offset: 2px;
-        }
-        
         [contenteditable] {
             outline: none;
             padding: 8px;
             border: 1px solid transparent;
         }
-
         [contenteditable]:hover {
             border: 1px solid #ddd;
         }
-        
-        /* Placeholder for contenteditable divs */
         [contenteditable]:empty::before {
             content: attr(placeholder);
             color: #a0aec0;
             pointer-events: none;
+        }
+
+        /* Estilos dos blocos de conteúdo */
+        .casestudybox {
+            background-color: #F5F5F5;
+            border-top: 1px solid #2B3A67;
+            border-bottom: 1px solid #2B3A67;
+            padding: 1.5rem;
+            font-style: italic;
+            margin-bottom: 2rem;
+            position: relative;
+        }
+        .section-part-card {
+            border: 1px solid #2B3A67;
+            background-color: #fff;
+            margin-bottom: 2rem;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            position: relative;
+        }
+        .section-part-title {
+            background-color: #2B3A67;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+        .section-part-content {
+            padding: 1.5rem;
+        }
+        .do-card, .dont-card {
+            border-radius: 5px;
+            padding: 1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            position: relative;
+        }
+        .do-card {
+            background-color: #E8F5E9;
+            border: 1px solid #4CAF50;
+            color: #1B5E20;
+        }
+        .dont-card {
+            background-color: #FFEBEE;
+            border: 1px solid #F44336;
+            color: #B71C1C;
+        }
+        .do-card .icon { color: #4CAF50; }
+        .dont-card .icon { color: #F44336; }
+        .reflection-box {
+            border: 1px solid #2B3A67;
+            margin-top: 2rem;
+            border-radius: 0.375rem;
+            overflow: hidden;
+            position: relative;
+        }
+        .reflection-box-title {
+            background-color: #2B3A67;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            font-weight: bold;
+        }
+        .reflection-box-content {
+            padding: 1.5rem;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            color: #9ca3af;
+            background: rgba(255,255,255,0.5);
+            border-radius: 9999px;
+            width: 1.5rem;
+            height: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            cursor: pointer;
+        }
+        .group:hover .delete-btn {
+            opacity: 1;
+        }
+        .section-part-title .delete-btn {
+             color: white;
         }
 
     </style>
@@ -59,24 +139,20 @@
                 <div>
                     <label for="font-family-select" class="block text-sm font-medium text-gray-700">Fonte</label>
                     <select id="font-family-select" class="mt-1 block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option style="font-family: 'Noto Sans', sans-serif;" value="Noto Sans, sans-serif">Noto Sans</option>
                         <option style="font-family: 'Merriweather', serif;" value="Merriweather, serif">Merriweather</option>
                         <option style="font-family: 'Cormorant Garamond', serif;" value="Cormorant Garamond, serif">Cormorant Garamond</option>
                         <option style="font-family: 'EB Garamond', serif;" value="EB Garamond, serif">EB Garamond</option>
                         <option style="font-family: 'Lato', sans-serif;" value="Lato, sans-serif">Lato</option>
-                        <option style="font-family: 'Roboto', sans-serif;" value="Roboto, sans-serif">Roboto</option>
                     </select>
                 </div>
                 <div>
                     <label for="font-size-input" class="block text-sm font-medium text-gray-700">Tamanho da Fonte (px)</label>
-                    <input type="number" id="font-size-input" value="16" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                    <input type="number" id="font-size-input" value="16" class="mt-1 block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm">
                 </div>
                 <div>
                     <label for="font-color-input" class="block text-sm font-medium text-gray-700">Cor da Fonte</label>
                     <input type="color" id="font-color-input" value="#333333" class="mt-1 block w-full h-10 border-gray-300 rounded-md">
-                </div>
-                 <div>
-                    <label for="bg-color-input" class="block text-sm font-medium text-gray-700">Cor de Fundo (Cards)</label>
-                    <input type="color" id="bg-color-input" value="#ffffff" class="mt-1 block w-full h-10 border-gray-300 rounded-md">
                 </div>
                 <div class="flex items-center space-x-2">
                     <button id="bold-btn" class="p-2 bg-gray-200 rounded-md font-bold">B</button>
@@ -94,16 +170,15 @@
                 <div class="space-y-4 mb-8">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input type="number" id="page-number" placeholder="Nº da Primeira Página" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <input type="text" id="chapter-number" placeholder="Nº do Capítulo (ex: 1, I, etc.)" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="text" id="chapter-number" placeholder="Nº do Capítulo" class="p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
-                    <div contenteditable="true" id="chapter-title" placeholder="Título do Capítulo" style="font-family: 'Merriweather', serif; font-size: 28px; font-weight: bold;" class="editable w-full p-2 border-none text-3xl font-bold text-center bg-transparent"></div>
-                    <div contenteditable="true" id="chapter-subtitle" placeholder="Subtítulo do Capítulo (Opcional)" style="font-family: 'Lato', sans-serif; font-size: 18px; font-style: italic;" class="editable w-full p-2 border-none text-lg italic text-center text-gray-600 bg-transparent"></div>
+                    <div contenteditable="true" id="chapter-title" placeholder="Título do Capítulo" style="font-family: 'Merriweather', serif; font-size: 28px; font-weight: bold; color: #2B3A67;" class="editable w-full p-2 border-none text-3xl font-bold text-center bg-transparent"></div>
                 </div>
 
                 <!-- Mensagem de Abertura -->
-                <div id="opening-message-card" class="mb-8 p-6 bg-gray-50 border-l-4 border-gray-300 italic relative group">
-                    <div contenteditable="true" placeholder="Mensagem de abertura recuada (Opcional)" style="font-family: 'EB Garamond', serif; font-size: 17px;" class="editable w-full min-h-[96px] p-2 bg-transparent"></div>
-                    <button onclick="document.getElementById('opening-message-card').remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
+                <div class="casestudybox group">
+                    <div contenteditable="true" placeholder="Insira o estudo de caso ou mensagem de abertura aqui..." style="font-family: 'EB Garamond', serif; font-size: 17px;" class="editable w-full min-h-[96px] p-2 bg-transparent"></div>
+                    <button onclick="this.parentElement.remove()" class="delete-btn">✖</button>
                 </div>
                 
                 <!-- Texto Introdutório -->
@@ -112,16 +187,29 @@
                 </div>
 
                 <!-- Contêiner para Seções -->
-                <div id="sections-container" class="space-y-8"></div>
-                
-                <!-- Contêiner para Imagens -->
-                <div id="images-container" class="space-y-8 mt-8"></div>
+                <div id="sections-container" class="space-y-4"></div>
 
                 <!-- Botões de Ação -->
                 <div class="flex flex-wrap gap-4 mt-12 border-t pt-8">
-                    <button id="add-section-btn" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700 transition-colors">Adicionar Seção</button>
-                    <button onclick="document.getElementById('image-upload').click()" class="bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 transition-colors">Anexar Imagem</button>
-                    <input type="file" id="image-upload" class="hidden" accept="image/*">
+                    <div class="relative inline-block text-left">
+                        <div>
+                            <button type="button" id="add-block-btn" class="inline-flex justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-blue-600 text-white font-bold hover:bg-blue-700 focus:outline-none">
+                                Adicionar Bloco
+                                <svg class="-mr-1 ml-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                        <div id="add-block-dropdown" class="origin-top-left absolute left-0 mt-2 w-56 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none hidden z-10">
+                            <div class="py-1">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="part">Parte (A, B, C...)</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="subsection">Subtítulo / Seção</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="do">Card "O que fazer"</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="dont">Card "O que evitar"</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="reflection">Caixa de Reflexão</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-type="image">Imagem</a>
+                            </div>
+                        </div>
+                    </div>
+                     <input type="file" id="image-upload" class="hidden" accept="image/*">
                 </div>
             </div>
 
@@ -130,10 +218,6 @@
                  <button id="generate-preview-btn" class="bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg hover:bg-indigo-800 transition-colors text-lg shadow-lg">
                     Gerar Preview para Impressão
                 </button>
-                <div id="loader" class="hidden mt-4">
-                    <p>Gerando preview, por favor aguarde...</p>
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-700 mx-auto mt-2"></div>
-                </div>
             </div>
         </main>
     </div>
@@ -142,27 +226,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             const editorContainer = document.getElementById('editor-container');
             const sectionsContainer = document.getElementById('sections-container');
-            const imagesContainer = document.getElementById('images-container');
-            const addSectionBtn = document.getElementById('add-section-btn');
             const imageUpload = document.getElementById('image-upload');
             const generatePreviewBtn = document.getElementById('generate-preview-btn');
-            const loader = document.getElementById('loader');
 
             // --- Lógica de Edição de Texto ---
-            let selectedElementForBg = null;
             const fontFamilySelect = document.getElementById('font-family-select');
             const fontSizeInput = document.getElementById('font-size-input');
             const fontColorInput = document.getElementById('font-color-input');
-            const bgColorInput = document.getElementById('bg-color-input');
             const boldBtn = document.getElementById('bold-btn');
             const italicBtn = document.getElementById('italic-btn');
             const underlineBtn = document.getElementById('underline-btn');
-
-            editorContainer.addEventListener('focusin', (e) => {
-                if (e.target.closest('[contenteditable]')) {
-                    selectedElementForBg = e.target;
-                }
-            });
 
             const applyStyle = (command, value = null) => {
                 document.execCommand(command, false, value);
@@ -177,60 +250,84 @@
             
             fontSizeInput.addEventListener('input', (e) => {
                 const size = e.target.value;
-                if (size) {
-                    const selection = window.getSelection();
-                    if (selection.rangeCount > 0) {
-                        const range = selection.getRangeAt(0);
-                        const span = document.createElement('span');
-                        span.style.fontSize = `${size}px`;
-                        // Se a seleção estiver vazia (apenas um cursor), insere o span e move o cursor para dentro
-                        if (range.collapsed) {
-                           range.insertNode(span);
-                           range.selectNodeContents(span);
-                           range.collapse(false); // Colapsa para o final do span
-                        } else {
-                           // Envolve o texto selecionado
-                           range.surroundContents(span);
-                        }
-                    }
+                if (size && parseInt(size) > 0) {
+                     document.execCommand("fontSize", false, "1");
+                     var fontElements = window.getSelection().anchorNode.parentNode;
+                     fontElements.removeAttribute("size");
+                     fontElements.style.fontSize = size+"px";
                 }
             });
             
-            bgColorInput.addEventListener('input', (e) => {
-                if (selectedElementForBg) {
-                    const parentCard = selectedElementForBg.closest('.section-card, #opening-message-card');
-                    if (parentCard) parentCard.style.backgroundColor = e.target.value;
-                }
+            // --- Lógica para Adicionar Blocos de Conteúdo ---
+            const addBlockBtn = document.getElementById('add-block-btn');
+            const addBlockDropdown = document.getElementById('add-block-dropdown');
+
+            addBlockBtn.addEventListener('click', () => {
+                addBlockDropdown.classList.toggle('hidden');
             });
 
-            // --- Lógica para Adicionar Seções e Subsseções ---
-             editorContainer.addEventListener('click', (e) => {
-                if (e.target.matches('.add-subsection-btn')) {
-                    const subsectionContainer = e.target.previousElementSibling;
-                    const subsection = document.createElement('div');
-                    subsection.className = 'ml-6 mt-4 pt-4 border-l-2 pl-4 relative group';
-                    subsection.innerHTML = `
-                        <div contenteditable="true" placeholder="Título da Subsseção" style="font-family: 'Merriweather', serif; font-size: 19px; font-weight: bold;" class="editable w-full p-2 mb-2 border-none font-bold bg-transparent"></div>
-                        <div contenteditable="true" placeholder="Conteúdo da subsseção..." style="font-family: 'EB Garamond', serif; font-size: 17px;" class="editable w-full min-h-[120px] p-2 leading-relaxed"></div>
-                         <button onclick="this.parentElement.remove()" class="absolute top-0 right-0 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity text-xs">✖</button>
-                    `;
-                    subsectionContainer.appendChild(subsection);
+            addBlockDropdown.addEventListener('click', (e) => {
+                e.preventDefault();
+                const type = e.target.dataset.type;
+                if (type) {
+                    createBlock(type);
+                    addBlockDropdown.classList.add('hidden');
                 }
             });
-
-            addSectionBtn.addEventListener('click', () => {
-                const sectionCard = document.createElement('div');
-                sectionCard.className = 'p-6 bg-white border rounded-lg shadow-md relative group section-card';
-                sectionCard.innerHTML = `
-                    <div contenteditable="true" placeholder="Título da Seção" style="font-family: 'Merriweather', serif; font-size: 22px; font-weight: bold;" class="editable w-full p-2 mb-2 border-none text-xl font-bold bg-transparent"></div>
-                    <div contenteditable="true" placeholder="Breve texto introdutório da seção (opcional)" style="font-family: 'Lato', sans-serif; font-size: 16px; font-style: italic;" class="editable w-full min-h-[80px] p-2 mb-4 border-none italic text-gray-600 bg-transparent"></div>
-                    <div contenteditable="true" placeholder="Conteúdo da seção..." style="font-family: 'EB Garamond', serif; font-size: 18px;" class="editable w-full min-h-[180px] p-2 border-none leading-relaxed"></div>
-                    <div class="subsections-container mt-4 space-y-4"></div>
-                    <button class="add-subsection-btn mt-4 bg-gray-200 text-gray-700 text-sm font-bold py-1 px-3 rounded-md hover:bg-gray-300 transition-colors">Adicionar Subsseção</button>
-                    <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
-                `;
-                sectionsContainer.appendChild(sectionCard);
-            });
+            
+            function createBlock(type) {
+                let block;
+                switch(type) {
+                    case 'part':
+                        block = document.createElement('div');
+                        block.className = 'section-part-card group';
+                        block.innerHTML = `
+                            <div class="section-part-title">
+                                <div contenteditable="true" placeholder="Ex: Parte A: Título" class="editable w-full bg-transparent outline-none"><i class="fas fa-stethoscope mr-2"></i> Parte A: Desmistificando a Condição</div>
+                            </div>
+                            <div class="section-part-content">
+                                <div contenteditable="true" placeholder="Conteúdo da parte..." style="font-family: 'EB Garamond', serif;" class="editable w-full min-h-[180px]"></div>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="delete-btn">✖</button>`;
+                        break;
+                    case 'subsection':
+                        block = document.createElement('div');
+                        block.innerHTML = `<div contenteditable="true" placeholder="Título da Seção" style="font-family: 'Merriweather', serif; font-size: 20px; font-weight: bold; margin-top: 1.5rem; margin-bottom: 0.5rem;" class="editable w-full p-2"></div>`;
+                        break;
+                    case 'do':
+                        block = document.createElement('div');
+                        block.className = 'do-card group';
+                        block.innerHTML = `
+                            <div class="icon text-xl"><i class="fas fa-check-circle"></i></div>
+                            <div contenteditable="true" placeholder="Escreva o que deve ser feito..." class="editable w-full"></div>
+                            <button onclick="this.parentElement.remove()" class="delete-btn">✖</button>`;
+                        break;
+                    case 'dont':
+                        block = document.createElement('div');
+                        block.className = 'dont-card group';
+                        block.innerHTML = `
+                            <div class="icon text-xl"><i class="fas fa-times-circle"></i></div>
+                            <div contenteditable="true" placeholder="Escreva o que deve ser evitado..." class="editable w-full"></div>
+                            <button onclick="this.parentElement.remove()" class="delete-btn">✖</button>`;
+                        break;
+                    case 'reflection':
+                         block = document.createElement('div');
+                        block.className = 'reflection-box group';
+                        block.innerHTML = `
+                            <div class="reflection-box-title">
+                                <div contenteditable="true" placeholder="Título da caixa" class="editable w-full bg-transparent outline-none">Para Refletir</div>
+                            </div>
+                            <div class="reflection-box-content">
+                                <div contenteditable="true" placeholder="Conteúdo da reflexão..." style="font-family: 'EB Garamond', serif;" class="editable w-full min-h-[120px]"></div>
+                            </div>
+                            <button onclick="this.parentElement.remove()" class="delete-btn text-white">✖</button>`;
+                        break;
+                    case 'image':
+                        imageUpload.click();
+                        return;
+                }
+                if (block) sectionsContainer.appendChild(block);
+            }
             
             // --- Lógica para Anexar Imagens ---
             imageUpload.addEventListener('change', (event) => {
@@ -239,15 +336,14 @@
                     const reader = new FileReader();
                     reader.onload = (e) => {
                         const imageWrapper = document.createElement('div');
-                        imageWrapper.className = 'relative group';
+                        imageWrapper.className = 'relative group mt-4';
                         imageWrapper.innerHTML = `
-                            <img src="${e.target.result}" class="max-w-full h-auto mx-auto rounded-md shadow-lg" alt="Imagem do usuário">
+                            <img src="${e.target.result}" class="max-w-full h-auto mx-auto rounded-md shadow-lg">
                             <div class="mt-2">
-                                <div contenteditable="true" placeholder="Legenda da imagem (opcional)" style="font-family: 'Lato', sans-serif; font-size: 14px;" class="editable w-full p-2 border-none text-sm text-center text-gray-600"></div>
+                                <div contenteditable="true" placeholder="Legenda da imagem (opcional)" style="font-family: 'Lato', sans-serif; font-size: 14px; font-style: italic;" class="editable w-full p-2 text-sm text-center text-gray-600"></div>
                             </div>
-                            <button onclick="this.parentElement.remove()" class="absolute top-2 right-2 bg-white rounded-full p-1 text-gray-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity">✖</button>
-                        `;
-                        imagesContainer.appendChild(imageWrapper);
+                            <button onclick="this.parentElement.remove()" class="delete-btn bg-white">✖</button>`;
+                        sectionsContainer.appendChild(imageWrapper);
                     };
                     reader.readAsDataURL(file);
                 }
@@ -255,56 +351,36 @@
 
             // --- Lógica para Gerar Preview em Nova Aba ---
             generatePreviewBtn.addEventListener('click', () => {
-                loader.classList.remove('hidden');
-                generatePreviewBtn.disabled = true;
-
                 const contentToPrint = editorContainer.cloneNode(true);
-                // Remover botões e elementos não imprimíveis do clone
-                contentToPrint.querySelectorAll('button, input[type="file"]').forEach(el => el.remove());
+                contentToPrint.querySelectorAll('button, input, #add-block-dropdown').forEach(el => el.remove());
                 contentToPrint.querySelectorAll('[contenteditable]').forEach(el => el.removeAttribute('contenteditable'));
 
-                const pageNumber = document.getElementById('page-number').value || '1';
                 const chapterTitle = document.getElementById('chapter-title').textContent || 'Título do Capítulo';
-                
-                const styles = Array.from(document.styleSheets)
-                    .map(styleSheet => {
-                        try {
-                            return Array.from(styleSheet.cssRules)
-                                .map(rule => rule.cssText)
-                                .join('');
-                        } catch (e) {
-                            console.log('Access to stylesheet %s is denied. Skipping.', styleSheet.href);
-                            return '';
-                        }
-                    })
-                    .join('');
-
                 const googleFontsLink = document.querySelector('link[href*="fonts.googleapis.com"]').outerHTML;
-                
+                const fontAwesomeLink = document.querySelector('link[href*="font-awesome"]').outerHTML;
+
                 const newWindow = window.open('', '_blank');
                 newWindow.document.write(`
                     <html>
                         <head>
                             <title>Preview - ${chapterTitle}</title>
                             ${googleFontsLink}
+                            ${fontAwesomeLink}
                             <script src="https://cdn.tailwindcss.com"><\/script>
                             <style>
                                 ${document.querySelector('style').innerHTML}
-                                body { background-color: #fff; }
+                                body { background-color: #fff; color: #000; }
+                                .drop-cap::first-letter { color: #000 !important; }
                                 @media print {
                                     #print-controls { display: none; }
                                     @page { 
-                                        margin: 20mm; 
-                                        @top-left { content: "${chapterTitle}"; font-size: 9pt; color: #888; }
+                                        size: a5;
+                                        margin: 2.5cm 2cm; 
                                         @top-right { content: counter(page); font-size: 9pt; color: #888; }
+                                        @top-left { content: "${chapterTitle}"; font-size: 9pt; color: #888; text-transform: uppercase; }
                                     }
                                 }
-                                #print-controls { 
-                                    padding: 20px; 
-                                    text-align: center; 
-                                    background-color: #f0f0f0; 
-                                    border-bottom: 1px solid #ccc;
-                                }
+                                #print-controls { padding: 20px; text-align: center; background-color: #f0f0f0; border-bottom: 1px solid #ccc; }
                             </style>
                         </head>
                         <body>
@@ -313,16 +389,11 @@
                                 <p class="text-sm mb-4">Use a função de impressão do seu navegador (Ctrl+P ou Cmd+P) para salvar como PDF.</p>
                                 <button onclick="window.print()" class="bg-blue-600 text-white font-bold py-2 px-4 rounded-md hover:bg-blue-700">Imprimir / Salvar como PDF</button>
                             </div>
-                            <div class="max-w-4xl mx-auto p-12">
-                                ${contentToPrint.innerHTML}
-                            </div>
+                            <div class="p-4">${contentToPrint.innerHTML}</div>
                         </body>
                     </html>
                 `);
                 newWindow.document.close();
-
-                loader.classList.add('hidden');
-                generatePreviewBtn.disabled = false;
             });
         });
     </script>
